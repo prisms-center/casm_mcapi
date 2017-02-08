@@ -4,8 +4,9 @@
 # and uploads the results files
 
 import os
+import mcapi.misc
 
-# Note assume throughout that mcapi.Project.local_abspath is set with local
+# Note assume throughout that mcapi.Project.path is set with local
 # Materials Commons project directory tree location
 
 # The following create and set measurments, updating 'create_sample_process'
@@ -152,7 +153,7 @@ def _add_sample_measurement(create_sample_process, attrname, sample, name=None):
     return _set_measurement(create_sample_process, attrname, measurement_data, name)
 
 
-def _add_file(proj, local_file_abspath, filename=None):
+def _add_file(proj, local_file_abspath, filename=None, verbose=False, limit=50):
     """
     Upload a file, matching local directory structure and creating intermediate
     remote directories as necessary. Uses local filename.
@@ -167,23 +168,30 @@ def _add_file(proj, local_file_abspath, filename=None):
         filename: str (default=os.path.basename(local_file_abspath))
           name to give file on Materials Commons
 
+        verbose: bool (default=False)
+          upload file verbosely
+
+        limit: number (default=50)
+          MB limit for file uploads
+
     """
-    file_relpath = os.path.relpath(proj.local_abspath, local_file_abspath)
-    top = proj.get_top_directory()
+    file_relpath = os.path.relpath(proj.path, local_file_abspath)
 
     # get mcapi.Directory to add file, creating intermediates as necessary
-    mcdir = top.get_descendent_list_by_path(os.path.dirname(file_relpath))[-1]
+    mcdir = mcapi.misc._get_file_or_directory(proj, os.path.dirname(file_relpath))
+    if mcdir is None:
+        mcdir = proj.get_directory(os.path.dirname(mcapi.misc._local_to_remote_relpath(proj, file_relpath)))
 
     if filename is None:
         filename = os.path.basename(local_file_abspath)
-    return mcdir.add_file(filename, local_file_abspath)
+    return mcdir.add_file(filename, local_file_abspath, verbose=verbose, limit=limit)
 
 
-def create_prim_sample(expt, casm_proj):
+def create_prim_sample(expt, casm_proj, sample_name=None):
     """
     Create a CASM Primitive Crystal Structure Sample
 
-    Assumes expt.proj.local_abspath exists and adds files relative to that path.
+    Assumes expt.project.path exists and adds files relative to that path.
 
     Arguments:
 
@@ -191,14 +199,22 @@ def create_prim_sample(expt, casm_proj):
 
         casm_proj: casm.project.Project object
 
+        sample_name: str
+          Name for sample, default is: casm_proj.name + ".prim"
+
     Returns:
 
         create_sample_process: mcapi.Process instance
           The Process that created the sample
     """
 
-    ## Create Sample
+    ## Process that will create samples
     create_sample_process = expt.create_process_from_template("global_Primitive Crystal Structure")
+
+    ## Create sample
+    if sample_name is None:
+        sample_name = casm_proj.name + ".prim"
+    create_sample_process.create_samples([sample_name])
 
     # Sample attributes (how to check names?):
     # "name"
@@ -273,7 +289,7 @@ def create_prim_sample(expt, casm_proj):
         prim.space_group_number)
 
     # "casm_prim_file"
-    mcfile = _add_file(expt.proj, casm_proj.dir.prim())
+    mcfile = _add_file(expt.project, casm_proj.dir.prim())
     _add_file_measurement(create_sample_process, 'casm_prism_file', mcfile)
 
     # "elements" - currently only elemental components are allowed
@@ -287,7 +303,7 @@ def create_prim_sample(expt, casm_proj):
     _add_integer_measurement(
         create_sample_process,
         'n_elements',
-        len(prim.n_elements))
+        len(prim.elements))
 
     # "components" - currently only elemental components are allowed
     _add_list_measurement(
@@ -314,6 +330,11 @@ def create_prim_sample(expt, casm_proj):
         'degrees_of_freedom',
         prim.degrees_of_freedom)
 
+    create_sample_process = mcapi.get_process_from_id(
+        expt.project,
+        expt,
+        create_sample_process.id)
+
     return create_sample_process
 
 
@@ -321,7 +342,7 @@ def create_composition_axes_sample(expt, casm_proj, prim, axes_name):
     """
     Create a CASM Composition Axes Sample
 
-    Assumes expt.proj.local_abspath exists and adds files relative to that path.
+    Assumes expt.project.path exists and adds files relative to that path.
 
     Arguments:
 
@@ -365,6 +386,11 @@ def create_composition_axes_sample(expt, casm_proj, prim, axes_name):
         'parametric_formula',
         axes.param_formula)
 
+    create_sample_process = mcapi.get_process_from_id(
+        expt.project,
+        expt,
+        create_sample_process.id)
+
     return create_sample_process
 
 
@@ -372,7 +398,7 @@ def create_clex_sample(expt, casm_proj, prim, clex_desc):
     """
     Create a CASM Cluster Expansion Effective Hamiltonian Sample
 
-    Assumes expt.proj.local_abspath exists and adds files relative to that path.
+    Assumes expt.project.path exists and adds files relative to that path.
 
     Arguments:
 
@@ -398,11 +424,16 @@ def create_clex_sample(expt, casm_proj, prim, clex_desc):
     _add_sample_measurement(create_sample_process, 'prim', prim)
 
     # "bspecs" (file)
-    mcfile = _add_file(expt.proj, casm_proj.dir.bspecs(clex_desc))
+    mcfile = _add_file(expt.project, casm_proj.dir.bspecs(clex_desc))
     _add_file_measurement(create_sample_process, 'bspecs', mcfile)
 
     # "eci" (file)
-    mcfile = _add_file(expt.proj, casm_proj.dir.eci(clex_desc))
+    mcfile = _add_file(expt.project, casm_proj.dir.eci(clex_desc))
     _add_file_measurement(create_sample_process, 'eci', mcfile.id, mcfile.name)
+
+    create_sample_process = mcapi.get_process_from_id(
+        expt.project,
+        expt,
+        create_sample_process.id)
 
     return create_sample_process

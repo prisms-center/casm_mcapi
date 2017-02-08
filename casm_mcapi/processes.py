@@ -12,7 +12,7 @@ class GcmcConditions(object):
     def __init__(self, data):
         """
         Arguments:
-        
+
             data: dict
               CASM Monte Carlo input file format:
                 {'temperature':T, 'param_chem_pot:{'a':<a>, 'b':<b>,...}}
@@ -25,7 +25,7 @@ def create_monte_carlo_process(expt, settings_local_abspath, prim, comp_axes,
     """
     Create a CASM Monte Carlo Calculation process and uploads associated files
 
-    Assumes expt.proj.local_abspath exists and adds files relative to that path.
+    Assumes expt.project.path exists and adds files relative to that path.
 
     Arguments:
         expt: mcapi.Experiment object
