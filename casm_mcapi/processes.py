@@ -1,9 +1,11 @@
 """Create Processes"""
+from __future__ import (absolute_import, division, print_function, unicode_literals)
+from builtins import *
 
 import os
 import json
 import numpy as np
-import mcapi
+import materials_commons
 
 class GcmcConditions(object):
     """
@@ -28,7 +30,7 @@ def create_monte_carlo_process(expt, settings_local_abspath, prim, comp_axes,
     Assumes expt.project.path exists and adds files relative to that path.
 
     Arguments:
-        expt: mcapi.Experiment object
+        expt: materials_commons.Experiment object
         settings_local_abspath: Path to Monte Carlo input setttings file. Results
              are expected in the same directory.
         prim: Parent Crystal Structure sample
@@ -36,7 +38,7 @@ def create_monte_carlo_process(expt, settings_local_abspath, prim, comp_axes,
         formation_energy_clex: Formation energy Clex sample
 
     Returns:
-        proc: mcapi.Process
+        proc: materials_commons.Process
     """
     # Ref Materials Commons project
     proj = expt.project
@@ -111,7 +113,7 @@ def create_monte_carlo_process(expt, settings_local_abspath, prim, comp_axes,
     ## Upload files
     p = mc_local_abspath
 
-    mcdir = mcapi.misc._get_file_or_directory(proj, os.path.dirname(p))
+    mcdir = materials_commons.misc._get_file_or_directory(proj, os.path.dirname(p))
 
     files = mcdir.add_directory_tree(
         os.path.basename(p),

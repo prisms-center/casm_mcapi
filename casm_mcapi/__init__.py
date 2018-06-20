@@ -7,7 +7,7 @@ def set_templates(value=None):
     Enable swapping out templates
     """
     global templates
-    
+
     if value is None:
         # dictionary of cmdname -> template_id
         templates = {
@@ -26,15 +26,14 @@ def set_templates(value=None):
 set_templates()
 
 # specify the version of casm these functions work for
-CASM_VERSION = "0.2.X"
+CASM_VERSION = "0.3.X"
 MCAPI_NAME = "casm"
 MCAPI_DESC = "Create and inspect CASM samples, processes, measurements, etc."
 MCAPI_MODULE = "casm_mcapi"
 MCAPI_SUBCOMMAND = "casm_subcommand"
 
 __all__ = [
-    'MCAPI_NAME', 
-    'MCAPI_DESC', 
+    'MCAPI_NAME',
+    'MCAPI_DESC',
     'casm_subcommand',
     'set_templates']
-

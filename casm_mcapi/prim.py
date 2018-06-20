@@ -1,9 +1,11 @@
 """mc casm prim subcommand"""
+from __future__ import (absolute_import, division, print_function, unicode_literals)
+from builtins import *
 
 import sys
 import casm_mcapi
-from mcapi.cli import ListObjects
-from mcapi.cli.functions import make_local_project, make_local_expt
+from materials_commons.cli import ListObjects
+from materials_commons.cli.functions import make_local_project, make_local_expt, _trunc_name, _format_mtime
 from casm.project import Project
 
 def get_prim_sample(expt, sample_id=None, out=sys.stdout):
@@ -11,19 +13,19 @@ def get_prim_sample(expt, sample_id=None, out=sys.stdout):
     Return a CASM Primitive Crystal Structure sample from provided Materials Commons
     experiment and optionally explicit sample id. Returns None if sample_id is None
     and zero or >1 CASM Primitive Crystal Structure samples exist in the experiment.
-    
+
     Arguments:
 
-        expt: mcapi.Experiment object
+        expt: materials_commons.Experiment object
 
         sample_id: str, optional (default=None)
           Sample id to use explicitly
-        
+
     Returns:
 
-        prim: mcapi.Sample instance, or None
+        prim: materials_commons.Sample instance, or None
           A CASM Primitive Crystal Structure sample, or None if not found uniquely
-    
+
     """
     if sample_id is None:
         candidate_prim = [proc for proc in expt.get_all_processes() if proc.template_id == casm_mcapi.templates['prim']]
@@ -45,7 +47,7 @@ def get_prim_sample(expt, sample_id=None, out=sys.stdout):
     else:
         prim = expt.get_sample_by_id(sample_id)
     return prim
-        
+
 
 def create_prim_sample(expt, casm_proj, sample_name=None, verbose=False):
     """
@@ -55,19 +57,19 @@ def create_prim_sample(expt, casm_proj, sample_name=None, verbose=False):
 
     Arguments:
 
-        expt: mcapi.Experiment object
+        expt: materials_commons.Experiment object
 
         casm_proj: casm.project.Project object
 
         sample_name: str
           Name for sample, default is: casm_proj.name + ".prim"
-        
+
         verbose: bool
           Print messages about uploads, etc.
 
     Returns:
 
-        proc: mcapi.Process instance
+        proc: materials_commons.Process instance
           The Process that created the sample
     """
     template_id = casm_mcapi.templates['prim']
@@ -80,7 +82,7 @@ def create_prim_sample(expt, casm_proj, sample_name=None, verbose=False):
     if sample_name is None:
         sample_name = casm_proj.name + ".prim"
     proc.create_samples([sample_name])
-    
+
     proc = expt.get_process_by_id(proc.id)
 
     # Sample attributes (how to check names?):
@@ -152,33 +154,33 @@ def create_prim_sample(expt, casm_proj, sample_name=None, verbose=False):
 
 class PrimSubcommand(ListObjects):
     desc = "(sample) CASM Primitive Crystal Structure"
-    
+
     def __init__(self):
-        super(PrimSubcommand, self).__init__(["casm", "prim"], "CASM Primitive Crystal Structure", "CASM Primitive Crystal Structures", 
+        super(PrimSubcommand, self).__init__(["casm", "prim"], "CASM Primitive Crystal Structure", "CASM Primitive Crystal Structures",
             desc="Uploads prim.json and creates an entity (sample) representing the prim.",
             expt_member=True,
             list_columns=['name', 'owner', 'template_name', 'id', 'mtime'],
             creatable=True)
-    
+
     def get_all_from_experiment(self, expt):
         return [proc for proc in expt.get_all_processes() if proc.template_id == casm_mcapi.templates[self.cmdname[-1]]]
-    
+
     def get_all_from_project(self, proj):
         return [proc for proc in proj.get_all_processes() if proc.template_id == casm_mcapi.templates[self.cmdname[-1]]]
-    
+
     def create(self, args, out=sys.stdout):
         proj = make_local_project()
         expt = make_local_expt(proj)
         casm_proj = Project()
         proc = create_prim_sample(expt, casm_proj, verbose=True)
         out.write('Created process: ' + proc.name + ' ' + proc.id + '\n')
-        
-    
+
+
     def add_create_options(self, parser):
         #some_option_help = "Some option help info"
         #parser.add_argument('--some_option', action="store_true", default=False, help=some_option_help)
         return
-    
+
     def list_data(self, obj):
         return {
             'name': _trunc_name(obj),
@@ -187,4 +189,3 @@ class PrimSubcommand(ListObjects):
             'id': obj.id,
             'mtime': _format_mtime(obj.mtime)
         }
-
